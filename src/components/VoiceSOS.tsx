@@ -181,6 +181,7 @@ Guide them out loud through the next 5-10 minutes using urge-surfing and groundi
           <div className="flex gap-2">
             <button
               onClick={toggleMute}
+              aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}
               className="flex-1 flex items-center justify-center gap-2 bg-[#141518] border border-gray-800 hover:border-gray-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
             >
               {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
@@ -188,6 +189,7 @@ Guide them out loud through the next 5-10 minutes using urge-surfing and groundi
             </button>
             <button
               onClick={endCall}
+              aria-label="End voice session"
               className="flex-1 flex items-center justify-center gap-2 bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
             >
               <PhoneOff className="w-3.5 h-3.5" />

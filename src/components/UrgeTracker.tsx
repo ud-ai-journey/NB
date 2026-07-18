@@ -195,10 +195,11 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
             {/* Intensity */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-bold uppercase text-gray-400 tracking-wider">
-                <span>Urge Intensity</span>
+                <label htmlFor="urge-intensity-slider">Urge Intensity</label>
                 <span className="text-indigo-400 font-mono font-bold text-sm">{intensity}/10</span>
               </div>
               <input
+                id="urge-intensity-slider"
                 type="range"
                 min="1"
                 max="10"
@@ -215,8 +216,9 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
 
             {/* Trigger Scenario */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider">Primary Trigger</label>
+              <label htmlFor="urge-trigger-select" className="block text-xs font-bold uppercase text-gray-400 tracking-wider">Primary Trigger</label>
               <select
+                id="urge-trigger-select"
                 value={trigger}
                 onChange={(e) => setTrigger(e.target.value)}
                 className="w-full bg-[#0A0B0E] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
@@ -233,8 +235,9 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
 
             {/* Context / Situation */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider">Situational Context</label>
+              <label htmlFor="urge-situation-input" className="block text-xs font-bold uppercase text-gray-400 tracking-wider">Situational Context</label>
               <input
+                id="urge-situation-input"
                 type="text"
                 placeholder="e.g. Working late at home office, watching TV on couch"
                 value={situation}
@@ -246,10 +249,11 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
             {/* Coping State */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider">How did you respond? *</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Coping outcome selection">
                 <button
                   type="button"
                   onClick={() => setHandled('surfed')}
+                  aria-pressed={handled === 'surfed'}
                   className={`py-2.5 px-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                     handled === 'surfed'
                       ? 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/5'
@@ -261,6 +265,7 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
                 <button
                   type="button"
                   onClick={() => setHandled('resisted')}
+                  aria-pressed={handled === 'resisted'}
                   className={`py-2.5 px-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                     handled === 'resisted'
                       ? 'bg-sky-950/40 border-sky-500 text-sky-400 shadow-md shadow-sky-500/5'
@@ -272,6 +277,7 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
                 <button
                   type="button"
                   onClick={() => setHandled('slipped')}
+                  aria-pressed={handled === 'slipped'}
                   className={`py-2.5 px-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                     handled === 'slipped'
                       ? 'bg-red-950/40 border-red-500 text-red-400 shadow-md shadow-red-500/5'
@@ -285,8 +291,9 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToD
 
             {/* Notes */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider">CBT Journal / Feelings Note</label>
+              <label htmlFor="urge-notes-textarea" className="block text-xs font-bold uppercase text-gray-400 tracking-wider">CBT Journal / Feelings Note</label>
               <textarea
+                id="urge-notes-textarea"
                 rows={2}
                 placeholder="What thoughts were in your head? How did you feel afterward?"
                 value={notes}

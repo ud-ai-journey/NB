@@ -269,7 +269,7 @@ export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: C
           <div className="relative inline-flex bg-[#0A0B0E] p-2.5 rounded-xl border border-indigo-500/30 items-center gap-3">
             <img 
               src={imagePreview} 
-              alt="Preview" 
+              alt="Attachment preview" 
               className="w-12 h-12 rounded-lg object-cover border border-gray-800"
               referrerPolicy="no-referrer"
             />
@@ -279,6 +279,7 @@ export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: C
             </div>
             <button 
               onClick={removeImage}
+              aria-label="Remove attached image"
               className="w-6 h-6 bg-red-950/40 border border-red-900/30 text-red-400 rounded-lg flex items-center justify-center cursor-pointer ml-4 hover:bg-red-900/20 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
@@ -312,6 +313,7 @@ export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: C
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
+            aria-label="Upload or snap trigger image"
             className="w-12 bg-[#0A0B0E] hover:bg-gray-900 disabled:bg-gray-900 text-gray-400 hover:text-white rounded-xl flex items-center justify-center transition-colors border border-gray-800 cursor-pointer"
             title="Upload/Snapshot Trigger Image"
           >
@@ -320,6 +322,7 @@ export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: C
 
           <input
             type="text"
+            aria-label="Talk to your CBT Coach"
             placeholder={activeHabit ? `Talk to your CBT Coach about ${activeHabit.name}...` : "Talk to your coach..."}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -329,6 +332,7 @@ export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: C
           />
           <button
             onClick={() => handleSendMessage(inputValue)}
+            aria-label="Send message"
             disabled={(!inputValue.trim() && !selectedImage) || isLoading}
             className="w-12 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-800 disabled:text-gray-600 rounded-xl flex items-center justify-center transition-colors border border-indigo-500/20 shadow-md shadow-indigo-600/10 cursor-pointer"
           >

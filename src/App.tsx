@@ -196,6 +196,7 @@ export default function App() {
           
           <button
             onClick={() => setActiveTab('dashboard')}
+            aria-label="Dashboard"
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'dashboard'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-bold'
@@ -208,6 +209,7 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('plan')}
+            aria-label="CBT Plan"
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'plan'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-bold'
@@ -220,6 +222,7 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('tracker')}
+            aria-label="Cravings Tracker"
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'tracker'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-bold'
@@ -232,6 +235,7 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('chat')}
+            aria-label="AI Behavioral Coach Chat"
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'chat'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-bold'
@@ -244,6 +248,7 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('reflection')}
+            aria-label="Daily Journal Reflection"
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'reflection'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-bold'

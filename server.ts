@@ -1,6 +1,9 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import cors from "cors";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 
@@ -9,6 +12,28 @@ dotenv.config();
 
 // Create Express app
 const app = express();
+
+// Apply secure HTTP headers via helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable CSP to allow local Vite hot reloading scripts
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// Enable CORS
+app.use(cors());
+
+// Configure Rate Limiter for API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again after 15 minutes." },
+});
+app.use("/api/", apiLimiter);
+
 app.use(express.json({ limit: "50mb" })); // Increase limit for base64 image uploads
 
 const PORT = 3000;
@@ -206,6 +231,16 @@ async function callAIEngine(
   }
 }
 
+// Helper functions for safe sanitization & validation
+function sanitize(input: any, maxLength = 200): string {
+  if (typeof input !== "string") return "";
+  return input.replace(/<[^>]*>/g, "").trim().slice(0, maxLength);
+}
+
+function validateCategory(cat: string): boolean {
+  return ["screen-time", "substance", "physical", "dietary", "mental", "other"].includes(cat);
+}
+
 // ----------------------------------------------------
 // API ROUTES
 // ----------------------------------------------------
@@ -213,17 +248,39 @@ async function callAIEngine(
 // 1. Generate Action Plan Route
 app.post("/api/coaching/generate-plan", async (req, res) => {
   try {
-    const { habitName, category, currentLevel, targetGoal, triggers, recentLogs } = req.body;
+    let { habitName, category, currentLevel, targetGoal, triggers, recentLogs } = req.body;
 
     if (!habitName || !category) {
       return res.status(400).json({ error: "habitName and category are required." });
     }
 
+    habitName = sanitize(habitName, 100);
+    category = sanitize(category, 50);
+    currentLevel = sanitize(currentLevel, 100);
+    targetGoal = sanitize(targetGoal, 100);
+    triggers = sanitize(triggers, 500);
+
+    if (!habitName || !category) {
+      return res.status(400).json({ error: "Invalid habitName or category format." });
+    }
+
+    if (!validateCategory(category)) {
+      return res.status(400).json({ error: "Invalid habit category." });
+    }
+
     let logsPrompt = "";
-    if (recentLogs && recentLogs.length > 0) {
+    if (recentLogs && Array.isArray(recentLogs) && recentLogs.length > 0) {
+      const sanitizedLogs = recentLogs.slice(0, 10).map((log: any) => ({
+        timestamp: sanitize(log.timestamp, 30),
+        intensity: Math.min(10, Math.max(1, Number(log.intensity) || 5)),
+        trigger: sanitize(log.trigger, 100),
+        handled: sanitize(log.handled, 20),
+        situation: sanitize(log.situation, 200),
+      }));
+
       logsPrompt = `
 Here are the user's actual recently recorded cravings/slips for this habit:
-${JSON.stringify(recentLogs.slice(0, 10), null, 2)}
+${JSON.stringify(sanitizedLogs, null, 2)}
 Please analyze these actual logs. In your generated 'summary' and phased roadmap, explicitly refer to this data or trigger trends (for example, if they slip mostly at night due to boredom, or are highly successful at resisting during stress, customize your response to address these real patterns). Keep it compassionate.`;
     }
 
@@ -300,24 +357,55 @@ app.post("/api/coaching/chat", async (req, res) => {
       return res.status(400).json({ error: "messages array is required." });
     }
 
+    // Limit chat memory context to avoid prompt stuffing/abuse
+    const safeMessages = messages.slice(-15).map((m: any) => ({
+      role: m.role === "user" ? "user" : "model",
+      text: sanitize(m.text, 1000)
+    }));
+
+    const sanitizedHabit = habitContext ? {
+      name: sanitize(habitContext.name, 100),
+      category: sanitize(habitContext.category, 50),
+      targetGoal: sanitize(habitContext.targetGoal, 100)
+    } : null;
+
+    let sanitizedImage = undefined;
+    if (image) {
+      if (typeof image.mimeType !== "string" || typeof image.data !== "string" || !image.mimeType.startsWith("image/")) {
+        return res.status(400).json({ error: "Invalid image upload format." });
+      }
+      sanitizedImage = {
+        mimeType: image.mimeType,
+        data: image.data.replace(/[^A-Za-z0-9+/=]/g, "") // Base64 safe characters
+      };
+    }
+
     let adaptivityContext = "";
-    if (recentLogs && recentLogs.length > 0) {
+    if (recentLogs && Array.isArray(recentLogs) && recentLogs.length > 0) {
+      const sanitizedLogs = recentLogs.slice(0, 6).map((log: any) => ({
+        timestamp: sanitize(log.timestamp, 30),
+        intensity: Math.min(10, Math.max(1, Number(log.intensity) || 5)),
+        trigger: sanitize(log.trigger, 100),
+        handled: sanitize(log.handled, 20),
+        situation: sanitize(log.situation, 200),
+      }));
+
       adaptivityContext = `
 Here is actual craving/slip data recorded by this user recently:
-${JSON.stringify(recentLogs.slice(0, 6), null, 2)}
+${JSON.stringify(sanitizedLogs, null, 2)}
 Please use this log history to deliver fully adaptive coaching. If they have had many slips, be comforting, analyze patterns, and help them strategize. If they have had high success ('surfed' or 'resisted'), praise their efforts and mention their success rate!`;
     }
 
     const systemInstruction = `You are a supportive, warm, and highly skilled habit change coach. 
 You specialize in CBT, motivational interviewing, and mindfulness techniques (like Urge Surfing).
-The user is working to break/reduce a habit: ${habitContext ? JSON.stringify(habitContext) : "a bad habit"}.${adaptivityContext}
+The user is working to break/reduce a habit: ${sanitizedHabit ? JSON.stringify(sanitizedHabit) : "a bad habit"}.${adaptivityContext}
 Your tone should be:
 - Empathetic and non-judgmental (never lecture or shame).
 - Highly actionable, offering 1 practical tip or prompt at a time.
 - Encouraging, treating slips as natural learning steps.
 - Avoid writing long, dry walls of text. Keep responses focused, conversational, and split into readable short paragraphs (max 120-150 words).`;
 
-    const aiResult = await callAIEngine(systemInstruction, messages, null, 0.7, image);
+    const aiResult = await callAIEngine(systemInstruction, safeMessages, null, 0.7, sanitizedImage);
     res.json({ text: aiResult.text, aiProvider: aiResult.provider });
   } catch (error: any) {
     console.error("Error in coaching chat:", error);
@@ -328,11 +416,21 @@ Your tone should be:
 // 3. Analyze Urges Route
 app.post("/api/coaching/analyze-urges", async (req, res) => {
   try {
-    const { urges, habitName } = req.body;
+    let { urges, habitName } = req.body;
 
     if (!urges || !Array.isArray(urges)) {
       return res.status(400).json({ error: "urges array is required." });
     }
+
+    habitName = sanitize(habitName, 100);
+    const sanitizedUrges = urges.slice(0, 50).map((log: any) => ({
+      timestamp: sanitize(log.timestamp, 30),
+      intensity: Math.min(10, Math.max(1, Number(log.intensity) || 5)),
+      trigger: sanitize(log.trigger, 100),
+      handled: sanitize(log.handled, 20),
+      situation: sanitize(log.situation, 200),
+      notes: sanitize(log.notes, 500),
+    }));
 
     const systemInstruction = `You are a professional behavioral analyst.
 Analyze the user's habit urge logs and provide an empathetic, data-driven synthesis of their patterns.
@@ -341,7 +439,7 @@ Ensure the feedback is strictly formatted as JSON.`;
 
     const prompt = `Analyze logs for habit: "${habitName || "General Habit"}".
 Logs:
-${JSON.stringify(urges, null, 2)}
+${JSON.stringify(sanitizedUrges, null, 2)}
 
 Provide clear, structural analysis including risk factors, trigger breakdown, and actionable steps to bypass future cravings.`;
 
@@ -374,7 +472,12 @@ Provide clear, structural analysis including risk factors, trigger breakdown, an
 // 4. Quick Support / Urge Surfing Emergency Route
 app.post("/api/coaching/quick-support", async (req, res) => {
   try {
-    const { intensity, trigger, context, habitName } = req.body;
+    let { intensity, trigger, context, habitName } = req.body;
+
+    intensity = Math.min(10, Math.max(1, Number(intensity) || 7));
+    trigger = sanitize(trigger, 100);
+    context = sanitize(context, 200);
+    habitName = sanitize(habitName, 100);
 
     const systemInstruction = `You are an emergency crisis support coach for breaking harmful habits.
 The user is experiencing an ACUTE, immediate craving right now.
@@ -383,7 +486,7 @@ Keep your response short, extremely direct, calming, and highly sensory (using d
 Ensure the result is formatted as JSON.`;
 
     const prompt = `The user is having an intense urge to engage in "${habitName || "their habit"}" right now.
-Intensity: ${intensity || 7}/10.
+Intensity: ${intensity}/10.
 Trigger: ${trigger || "Not specified"}.
 Context: ${context || "Not specified"}.
 
@@ -417,7 +520,14 @@ Give them an immediate, grounding exercise to weather this urge.`;
 // 5. Daily Reflection Route
 app.post("/api/coaching/reflection", async (req, res) => {
   try {
-    const { mood, complianceRate, reflectionText, currentHabits } = req.body;
+    let { mood, complianceRate, reflectionText, currentHabits } = req.body;
+
+    mood = sanitize(mood, 50);
+    complianceRate = Math.min(5, Math.max(1, Number(complianceRate) || 5));
+    reflectionText = sanitize(reflectionText, 1000);
+    const sanitizedHabits = Array.isArray(currentHabits)
+      ? currentHabits.map((h: any) => sanitize(h, 100))
+      : [];
 
     const systemInstruction = `You are a compassionate, weekly/daily check-in coach.
 The user is reflecting on their habits. Give them highly personalized, encouraging feedback based on their current state and mood.
@@ -427,7 +537,7 @@ Validate their struggle if they failed, cheer them on if they succeeded, and pro
 Mood: ${mood}
 Habit compliance/success rate today: ${complianceRate}/5
 Reflection diary: "${reflectionText || "No journal notes provided."}"
-Active habit goals: ${JSON.stringify(currentHabits || [])}
+Active habit goals: ${JSON.stringify(sanitizedHabits)}
 
 Give a direct, warm, supportive coach response.`;
 
@@ -457,9 +567,15 @@ async function setupServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
-setupServer();
+if (process.env.NODE_ENV !== "test") {
+  setupServer();
+}
+
+export { app, sanitize, validateCategory };

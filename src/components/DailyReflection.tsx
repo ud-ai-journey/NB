@@ -170,10 +170,11 @@ export default function DailyReflection({ currentHabits, onBackToDashboard }: Da
 
             {/* Reflection Textarea */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider">
+              <label htmlFor="daily-reflection-textarea" className="block text-xs font-bold uppercase text-gray-400 tracking-wider">
                 What thoughts, triggers, or successes did you navigate? *
               </label>
               <textarea
+                id="daily-reflection-textarea"
                 rows={5}
                 required
                 placeholder="Write honestly about your habits, cravings, trigger management, or mindfulness activities today. The AI coach will read this and offer personalized psychological feedback."

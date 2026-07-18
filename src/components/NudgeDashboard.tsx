@@ -330,6 +330,7 @@ export default function NudgeDashboard({
             <button 
               onClick={() => setToastMessage(null)} 
               className="text-gray-500 hover:text-white text-xs font-bold font-mono ml-auto cursor-pointer"
+              aria-label="Dismiss Alert"
             >
               ×
             </button>
@@ -475,6 +476,7 @@ export default function NudgeDashboard({
                     showToast(enabled ? "🔔 Scheduled alerts enabled. We will monitor your behavior times." : "❌ Scheduled alerts paused.");
                   }}
                   className="sr-only peer" 
+                  aria-label="Toggle Daily Adaptive Alerts"
                 />
                 <div className="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
@@ -528,8 +530,9 @@ export default function NudgeDashboard({
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Create New Habit Goal</h4>
             <form onSubmit={handleCreateHabit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 block">Habit Name *</label>
+                <label htmlFor="habit-new-name" className="text-[10px] font-bold text-slate-400 block">Habit Name *</label>
                 <input
+                  id="habit-new-name"
                   type="text"
                   required
                   placeholder="e.g. Nicotine Vaping"
@@ -540,8 +543,9 @@ export default function NudgeDashboard({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 block">Category</label>
+                <label htmlFor="habit-new-category" className="text-[10px] font-bold text-slate-400 block">Category</label>
                 <select
+                  id="habit-new-category"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as any)}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200"
@@ -556,8 +560,9 @@ export default function NudgeDashboard({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 block">Current Daily Usage</label>
+                <label htmlFor="habit-new-current-level" className="text-[10px] font-bold text-slate-400 block">Current Daily Usage</label>
                 <input
+                  id="habit-new-current-level"
                   type="text"
                   placeholder="e.g. 4 hours, 10 times"
                   value={newCurrent}
@@ -567,8 +572,9 @@ export default function NudgeDashboard({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 block">Target Threshold Goal</label>
+                <label htmlFor="habit-new-target-goal" className="text-[10px] font-bold text-slate-400 block">Target Threshold Goal</label>
                 <input
+                  id="habit-new-target-goal"
                   type="text"
                   placeholder="e.g. Under 1 hour, Complete stop"
                   value={newTarget}
@@ -578,8 +584,9 @@ export default function NudgeDashboard({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 block">Unit of Measurement</label>
+                <label htmlFor="habit-new-unit" className="text-[10px] font-bold text-slate-400 block">Unit of Measurement</label>
                 <input
+                  id="habit-new-unit"
                   type="text"
                   placeholder="e.g. hours, cigarettes, times"
                   value={newUnit}
@@ -713,7 +720,7 @@ export default function NudgeDashboard({
                     transition={{ duration: 4, ease: "easeInOut" }}
                     className="absolute inset-0 bg-violet-600/15 border-2 border-violet-500/40 rounded-full"
                   />
-                  <div className="z-10 text-center space-y-1">
+                  <div className="z-10 text-center space-y-1" aria-live="polite">
                     <span className="text-2xl font-display font-bold text-slate-100 block">{breathState}</span>
                     <span className="text-xs text-slate-400 font-mono">Next change in: <strong>{breathTimer}s</strong></span>
                   </div>
