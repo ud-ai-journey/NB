@@ -7,9 +7,10 @@ interface PlanGeneratorProps {
   onPlanGenerated: (plan: ActionPlan) => void;
   activePlan: ActionPlan | null;
   currentHabitName?: string;
+  logs: any[];
 }
 
-export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabitName }: PlanGeneratorProps) {
+export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabitName, logs }: PlanGeneratorProps) {
   const [habitName, setHabitName] = useState(currentHabitName || '');
   const [category, setCategory] = useState<'screen-time' | 'substance' | 'physical' | 'dietary' | 'mental' | 'other'>('screen-time');
   const [currentLevel, setCurrentLevel] = useState('');
@@ -44,6 +45,7 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
           currentLevel,
           targetGoal,
           triggers,
+          recentLogs: logs,
         }),
       });
 

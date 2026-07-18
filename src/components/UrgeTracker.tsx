@@ -2,6 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Plus, History, Brain, LineChart, CheckCircle2, AlertOctagon, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
 import { UrgeLog } from '../types';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart,
+  Pie
+} from 'recharts';
 
 interface UrgeTrackerProps {
   logs: UrgeLog[];
@@ -49,6 +63,37 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName }: UrgeTra
   const topTrigger = Object.keys(triggerCounts).length > 0
     ? Object.entries(triggerCounts).sort((a, b) => b[1] - a[1])[0][0]
     : 'None yet';
+
+  // 1. Chart Data: Severity trend over time (chronological)
+  const chronologicalLogs = [...filteredLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const trendData = chronologicalLogs.slice(-10).map((log, idx) => {
+    const d = new Date(log.timestamp);
+    return {
+      index: idx + 1,
+      date: d.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      time: d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+      intensity: log.intensity,
+      trigger: log.trigger,
+    };
+  });
+
+  // 2. Chart Data: Outcomes distribution
+  const outcomeCounts = filteredLogs.reduce((acc, l) => {
+    acc[l.handled] = (acc[l.handled] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const outcomeData = [
+    { name: 'Surfed', value: outcomeCounts['surfed'] || 0, color: '#10b981' },
+    { name: 'Resisted', value: outcomeCounts['resisted'] || 0, color: '#0ea5e9' },
+    { name: 'Slipped', value: outcomeCounts['slipped'] || 0, color: '#f43f5e' },
+  ].filter(item => item.value > 0);
+
+  // 3. Chart Data: Triggers frequency
+  const triggerData = Object.entries(triggerCounts).map(([key, val]) => ({
+    name: key.length > 12 ? `${key.substring(0, 10)}...` : key,
+    count: val,
+  })).sort((a, b) => b.count - a.count);
 
   const handleLogSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,6 +321,123 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName }: UrgeTra
       {/* RIGHT COLUMN: History & AI Pattern Analysis */}
       <div className="lg:col-span-7 space-y-6">
         
+        {/* NEURAL BEHAVIORAL CHARTS */}
+        <div className="bg-[#141518] border border-gray-800 rounded-[32px] p-8 shadow-xl space-y-6">
+          <div className="flex items-center gap-4 border-b border-gray-855 pb-4">
+            <div className="w-10 h-10 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl flex items-center justify-center">
+              <LineChart className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-lg text-white">Neural Habit Analytics</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Real-time Recharts visualizers of urge dynamics</p>
+            </div>
+          </div>
+
+          {filteredLogs.length === 0 ? (
+            <div className="py-12 text-center text-gray-500 text-xs border border-dashed border-gray-800/80 rounded-[24px] bg-[#0A0B0E]/20">
+              No chart data available yet. Log an urge to begin plotting behavioral dynamics.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Chart 1: Intensity Trend */}
+              <div className="space-y-2">
+                <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Urge Severity Timeline (Last 10 Logs)</span>
+                <div className="h-44 w-full bg-[#0A0B0E]/40 border border-gray-850 rounded-2xl p-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData}>
+                      <defs>
+                        <linearGradient id="colorIntensity" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.3} />
+                      <XAxis dataKey="date" stroke="#6b7280" fontSize={9} tickLine={false} />
+                      <YAxis stroke="#6b7280" fontSize={9} tickLine={false} domain={[1, 10]} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#141518', borderColor: '#374151', borderRadius: '12px' }}
+                        labelStyle={{ color: '#9ca3af', fontSize: '10px', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#fff', fontSize: '11px' }}
+                      />
+                      <Area type="monotone" dataKey="intensity" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorIntensity)" name="Intensity" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Grid of Outcome Pie & Trigger Bar */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Outcomes Pie */}
+                <div className="space-y-2 bg-[#0A0B0E]/30 border border-gray-850 rounded-2xl p-4">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Coping Outcome Ratio</span>
+                  {outcomeData.length > 0 ? (
+                    <div className="h-32 flex items-center justify-center relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={outcomeData}
+                            cx="40%"
+                            cy="50%"
+                            innerRadius={25}
+                            outerRadius={45}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {outcomeData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#141518', borderColor: '#374151', borderRadius: '12px' }}
+                            itemStyle={{ color: '#fff', fontSize: '11px' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 space-y-1.5 text-right">
+                        {outcomeData.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5 justify-end text-[9px]">
+                            <span className="text-gray-300 font-mono">{item.name}: {item.value}</span>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center text-xs text-gray-550">No data</div>
+                  )}
+                </div>
+
+                {/* Triggers Bar Chart */}
+                <div className="space-y-2 bg-[#0A0B0E]/30 border border-gray-855 rounded-2xl p-4">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Triggers Distribution</span>
+                  {triggerData.length > 0 ? (
+                    <div className="h-32">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={triggerData.slice(0, 4)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.1} />
+                          <XAxis dataKey="name" stroke="#6b7280" fontSize={8} tickLine={false} />
+                          <YAxis stroke="#6b7280" fontSize={8} tickLine={false} allowDecimals={false} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#141518', borderColor: '#374151', borderRadius: '12px' }}
+                            itemStyle={{ color: '#fff', fontSize: '10px' }}
+                          />
+                          <Bar dataKey="count" fill="#6366f1" radius={[3, 3, 0, 0]} name="Count">
+                            {triggerData.map((entry, idx) => (
+                              <Cell key={`cell-${idx}`} fill={idx === 0 ? '#6366f1' : '#4f46e5'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center text-xs text-gray-550">No data</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* AI PATTERN RECOGNITION */}
         <div className="bg-[#141518] border border-gray-800 rounded-[32px] p-8 shadow-xl space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-850 pb-5">

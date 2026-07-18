@@ -1,17 +1,47 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Send, Bot, User, BrainCircuit, RefreshCw, Sparkles } from 'lucide-react';
-import { ChatMessage, Habit } from '../types';
+import { Send, Bot, User, BrainCircuit, RefreshCw, Sparkles, Camera, X } from 'lucide-react';
+import { ChatMessage, Habit, UrgeLog } from '../types';
 
 interface CoachingChatProps {
   activeHabit: Habit | null;
+  logs: UrgeLog[];
 }
 
-export default function CoachingChat({ activeHabit }: CoachingChatProps) {
+export default function CoachingChat({ activeHabit, logs }: CoachingChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image upload snapshot states
+  const [selectedImage, setSelectedImage] = useState<{ mimeType: string; data: string } | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const resultStr = reader.result as string;
+        const commaIdx = resultStr.indexOf(',');
+        const data = resultStr.substring(commaIdx + 1);
+        const mimeType = file.type;
+        setSelectedImage({ mimeType, data });
+        setImagePreview(resultStr);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Suggested prompt chips for CBT
   const promptChips = [
@@ -59,13 +89,14 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
   };
 
   const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || isLoading) return;
+    if ((!textToSend.trim() && !selectedImage) || isLoading) return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       text: textToSend,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(selectedImage ? { image: selectedImage } : {})
     };
 
     const updatedMessages = [...messages, userMsg];
@@ -73,6 +104,13 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
     saveChatHistory(updatedMessages);
     setInputValue('');
     setIsLoading(true);
+
+    const tempImg = selectedImage;
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
 
     try {
       const response = await fetch('/api/coaching/chat', {
@@ -84,7 +122,9 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
             name: activeHabit.name,
             category: activeHabit.category,
             targetGoal: activeHabit.targetGoal,
-          } : null
+          } : null,
+          recentLogs: logs,
+          image: tempImg
         })
       });
 
@@ -177,6 +217,16 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
                   ? 'bg-indigo-600/15 text-white border border-indigo-500/20 rounded-tr-none'
                   : 'bg-[#0A0B0E]/80 text-gray-200 border border-gray-800/60 rounded-tl-none whitespace-pre-wrap'
               }`}>
+                {msg.image && (
+                  <div className="mb-2 max-w-xs overflow-hidden rounded-lg border border-indigo-500/30">
+                    <img 
+                      src={`data:${msg.image.mimeType};base64,${msg.image.data}`} 
+                      alt="Craving Trigger snapshot" 
+                      className="max-h-40 w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
                 {msg.text}
               </div>
 
@@ -203,6 +253,28 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
       {/* FOOTER INPUT & QUICK OPTIONS */}
       <div className="bg-[#0A0B0E]/40 border-t border-gray-800 p-5 space-y-4">
         
+        {/* Image Preview Box */}
+        {imagePreview && (
+          <div className="relative inline-flex bg-[#0A0B0E] p-2.5 rounded-xl border border-indigo-500/30 items-center gap-3">
+            <img 
+              src={imagePreview} 
+              alt="Preview" 
+              className="w-12 h-12 rounded-lg object-cover border border-gray-800"
+              referrerPolicy="no-referrer"
+            />
+            <div className="text-left">
+              <p className="text-[10px] font-bold uppercase text-indigo-400 tracking-wider">Snapshot Attachment Selected</p>
+              <p className="text-[9px] text-gray-500">Coach will analyze this craving trigger</p>
+            </div>
+            <button 
+              onClick={removeImage}
+              className="w-6 h-6 bg-red-950/40 border border-red-900/30 text-red-400 rounded-lg flex items-center justify-center cursor-pointer ml-4 hover:bg-red-900/20 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Quick chip options */}
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
           {promptChips.map((chip, idx) => (
@@ -219,6 +291,22 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
 
         {/* Input box */}
         <div className="flex gap-2.5">
+          <input 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            accept="image/*"
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="w-12 bg-[#0A0B0E] hover:bg-gray-900 disabled:bg-gray-900 text-gray-400 hover:text-white rounded-xl flex items-center justify-center transition-colors border border-gray-800 cursor-pointer"
+            title="Upload/Snapshot Trigger Image"
+          >
+            <Camera className="w-5 h-5 text-indigo-400" />
+          </button>
+
           <input
             type="text"
             placeholder={activeHabit ? `Talk to your CBT Coach about ${activeHabit.name}...` : "Talk to your coach..."}
@@ -230,7 +318,7 @@ export default function CoachingChat({ activeHabit }: CoachingChatProps) {
           />
           <button
             onClick={() => handleSendMessage(inputValue)}
-            disabled={!inputValue.trim() || isLoading}
+            disabled={(!inputValue.trim() && !selectedImage) || isLoading}
             className="w-12 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-800 disabled:text-gray-600 rounded-xl flex items-center justify-center transition-colors border border-indigo-500/20 shadow-md shadow-indigo-600/10 cursor-pointer"
           >
             <Send className="w-4.5 h-4.5 text-white" />

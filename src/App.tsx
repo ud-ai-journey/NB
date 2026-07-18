@@ -277,6 +277,7 @@ export default function App() {
             activePlan={activePlan}
             onPlanGenerated={handlePlanGenerated}
             currentHabitName={activeHabit?.name}
+            logs={logs}
           />
         )}
 
@@ -291,6 +292,7 @@ export default function App() {
         {activeTab === 'chat' && (
           <CoachingChat 
             activeHabit={activeHabit}
+            logs={logs}
           />
         )}
 

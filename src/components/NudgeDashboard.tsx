@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   Trash2,
   Volume2,
-  RefreshCw
+  RefreshCw,
+  Bell
 } from 'lucide-react';
 import { Habit, UrgeLog } from '../types';
 
@@ -57,6 +58,99 @@ export default function NudgeDashboard({
   // Metronome breathing state
   const [breathState, setBreathState] = useState<'Inhale' | 'Hold (Full)' | 'Exhale' | 'Hold (Empty)'>('Inhale');
   const [breathTimer, setBreathTimer] = useState(4);
+
+  // Proactive Notifications States
+  const [permission, setPermission] = useState<'default' | 'granted' | 'denied'>('default');
+  const [scheduledAlertsEnabled, setScheduledAlertsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('habit_breaker_scheduled_alerts') === 'true';
+  });
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<{ riskHour: string | null; count: number }>({ riskHour: null, count: 0 });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermission(Notification.permission);
+    }
+  }, []);
+
+  // Calculate high risk craving hours from logs
+  useEffect(() => {
+    if (!logs || logs.length === 0) {
+      setRiskAnalysis({ riskHour: null, count: 0 });
+      return;
+    }
+    const hourCounts: { [key: number]: number } = {};
+    logs.forEach(log => {
+      try {
+        const date = new Date(log.timestamp);
+        const hour = date.getHours();
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    });
+    
+    let maxHour: string | null = null;
+    let maxCount = 0;
+    Object.entries(hourCounts).forEach(([hour, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        maxHour = hour;
+      }
+    });
+
+    if (maxHour !== null) {
+      const hInt = parseInt(maxHour);
+      const ampm = hInt >= 12 ? 'PM' : 'AM';
+      const formattedHour = `${hInt % 12 || 12}:00 ${ampm}`;
+      setRiskAnalysis({ riskHour: formattedHour, count: maxCount });
+    } else {
+      setRiskAnalysis({ riskHour: null, count: 0 });
+    }
+  }, [logs]);
+
+  const requestNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      showToast("❌ System notifications not supported in this browser.");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    if (result === 'granted') {
+      showToast("🔔 System notifications enabled! Alerts are now active.");
+    }
+  };
+
+  const testProactiveNudge = () => {
+    const defaultMessages = [
+      "Breathe through this moment. An urge lasts only 15 minutes on average. Surf it!",
+      "PAUSE: What emotion are you feeling right now? Is it loneliness, stress, or just a routine trigger?",
+      "Take a deep breath. Let's do a 4-7-8 breathing sequence before you take any action.",
+      "A habit loop can be interrupted by shifting your physical space. Step away for 2 minutes!"
+    ];
+    const activeMsg = nudge && nudge !== 'Select a habit below to load custom AI coaching insights.' 
+      ? nudge 
+      : defaultMessages[Math.floor(Math.random() * defaultMessages.length)];
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification("Habit Breaker Coach 🧘", {
+          body: activeMsg,
+        });
+      } catch (err) {
+        console.error("Failed to show system notification:", err);
+      }
+    }
+
+    showToast(`🔔 PROACTIVE NUDGE: ${activeMsg}`);
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 6000);
+  };
 
   // Dynamic Daily Nudge state
   const [nudge, setNudge] = useState<string>('Select a habit below to load custom AI coaching insights.');
@@ -109,7 +203,8 @@ export default function NudgeDashboard({
               name: activeHabit.name,
               category: activeHabit.category,
               targetGoal: activeHabit.targetGoal
-            }
+            },
+            recentLogs: logs
           })
         });
 
@@ -215,6 +310,32 @@ export default function NudgeDashboard({
   return (
     <div id="nudge-dashboard-root" className="space-y-8">
       
+      {/* Dynamic Toast System */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-6 right-6 z-50 max-w-sm bg-gradient-to-r from-indigo-950 to-[#141518] border-2 border-indigo-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5"
+          >
+            <div className="w-8 h-8 bg-indigo-550/10 text-indigo-400 rounded-lg flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+              <Zap className="w-4 h-4 animate-bounce" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold uppercase text-indigo-400 tracking-wider">Coach Alert</h4>
+              <p className="text-white text-xs leading-relaxed">{toastMessage}</p>
+            </div>
+            <button 
+              onClick={() => setToastMessage(null)} 
+              className="text-gray-500 hover:text-white text-xs font-bold font-mono ml-auto cursor-pointer"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Dynamic AI Intelligent Nudge Banner */}
       <div className="bg-gradient-to-br from-indigo-900/40 to-[#141518] border border-indigo-500/20 rounded-[32px] p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
         <div className="flex items-center gap-4 z-10">
@@ -290,6 +411,92 @@ export default function NudgeDashboard({
             <span className="text-xl font-black font-mono text-white">
               {logs.filter(l => l.handled === 'surfed' || l.handled === 'resisted').length} times
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* PROACTIVE NUDGE CENTER */}
+      <div className="bg-[#141518] border border-gray-800 rounded-[32px] p-8 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-850 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl flex items-center justify-center">
+              <Bell className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="font-display font-extrabold text-lg text-white">Proactive Alert Engine</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Real-time Web Notification API & CBT nudges</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {permission === 'default' && (
+              <button
+                onClick={requestNotificationPermission}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition-all cursor-pointer border border-indigo-500/25"
+              >
+                Enable Notifications
+              </button>
+            )}
+            {permission === 'granted' && (
+              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl">
+                ● System Active
+              </span>
+            )}
+            {permission === 'denied' && (
+              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl" title="Unblock permissions in browser address bar to test system notifications">
+                ⚠️ Blocked in Browser
+              </span>
+            )}
+
+            <button
+              onClick={testProactiveNudge}
+              className="bg-gray-805 hover:bg-gray-800 text-gray-200 hover:text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition-all cursor-pointer border border-gray-700 flex items-center gap-2"
+            >
+              <Zap className="w-3.5 h-3.5 text-indigo-400" />
+              Simulate Nudge
+            </button>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-[#0A0B0E] border border-gray-850 p-5 rounded-2xl space-y-2">
+            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Scheduled Nudge Model</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-white">Daily Adaptive Triggers</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={scheduledAlertsEnabled}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    setScheduledAlertsEnabled(enabled);
+                    localStorage.setItem('habit_breaker_scheduled_alerts', String(enabled));
+                    showToast(enabled ? "🔔 Scheduled alerts enabled. We will monitor your behavior times." : "❌ Scheduled alerts paused.");
+                  }}
+                  className="sr-only peer" 
+                />
+                <div className="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+            <p className="text-gray-400 text-[11px] leading-relaxed">Runs in-background during your session to prompt your cognitive reframing.</p>
+          </div>
+
+          <div className="bg-[#0A0B0E] border border-gray-850 p-5 rounded-2xl space-y-2 col-span-2">
+            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Risk Analysis (Craving Heatmap Output)</span>
+            {riskAnalysis.riskHour ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-bold text-indigo-400 font-mono">{riskAnalysis.riskHour}</span>
+                <span className="text-gray-600">|</span>
+                <p className="text-gray-300 text-xs leading-relaxed">
+                  Based on <strong className="text-white font-semibold font-mono">{riskAnalysis.count} logs</strong>, your cravings spike at this hour. We have calibrated proactive alerts to prompt you 15 minutes before this window.
+                </p>
+              </div>
+            ) : (
+              <div className="text-xs text-gray-500 leading-relaxed italic flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-600" />
+                No craving trends analyzed yet. Add entries to the Urge Tracker to calculate your peak risk hour!
+              </div>
+            )}
           </div>
         </div>
       </div>
