@@ -1,7 +1,9 @@
 {
   "name": "Remix: Breaking Bad",
   "description": "A GenAI-powered platform named Breaking Bad to help users reduce and overcome harmful habits and addictions through real-time adaptive coaching, smart nudges, and personalized action plans.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "microphone"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

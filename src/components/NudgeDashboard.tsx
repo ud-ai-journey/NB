@@ -18,6 +18,7 @@ import {
   Bell
 } from 'lucide-react';
 import { Habit, UrgeLog } from '../types';
+import VoiceSOS from './VoiceSOS';
 
 interface NudgeDashboardProps {
   habits: Habit[];
@@ -721,6 +722,15 @@ export default function NudgeDashboard({
                   Match your breathing rate with the expanding bubble.
                 </p>
               </div>
+
+              {/* Live voice coaching option (Vapi) */}
+              {activeHabit && !sosLoading && (
+                <VoiceSOS
+                  habitName={activeHabit.name}
+                  trigger={logs.filter(l => l.habitName === activeHabit.name).slice(-1)[0]?.trigger}
+                  intensity={logs.filter(l => l.habitName === activeHabit.name).slice(-1)[0]?.intensity}
+                />
+              )}
 
               {/* Steps and Reframe */}
               {sosLoading ? (
