@@ -6,9 +6,10 @@ import { ChatMessage, Habit, UrgeLog } from '../types';
 interface CoachingChatProps {
   activeHabit: Habit | null;
   logs: UrgeLog[];
+  onBackToDashboard?: () => void;
 }
 
-export default function CoachingChat({ activeHabit, logs }: CoachingChatProps) {
+export default function CoachingChat({ activeHabit, logs, onBackToDashboard }: CoachingChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -171,7 +172,17 @@ export default function CoachingChat({ activeHabit, logs }: CoachingChatProps) {
   };
 
   return (
-    <div id="coaching-chat-root" className="bg-[#141518] border border-gray-800 rounded-[32px] flex flex-col h-[600px] shadow-xl overflow-hidden">
+    <div id="coaching-chat-wrapper" className="space-y-6">
+      {onBackToDashboard && (
+        <button
+          onClick={onBackToDashboard}
+          className="inline-flex items-center gap-2 text-xs font-bold font-mono text-gray-400 hover:text-indigo-400 cursor-pointer transition-all duration-200 px-4 py-2 rounded-xl bg-[#141518] border border-gray-800/80 hover:border-indigo-500/30 hover:bg-gray-900/40"
+        >
+          &larr; Back to Dashboard
+        </button>
+      )}
+
+      <div id="coaching-chat-root" className="bg-[#141518] border border-gray-800 rounded-[32px] flex flex-col h-[600px] shadow-xl overflow-hidden">
       
       {/* HEADER */}
       <div className="bg-[#0A0B0E]/60 border-b border-gray-800 px-6 py-5 flex items-center justify-between">
@@ -326,6 +337,7 @@ export default function CoachingChat({ activeHabit, logs }: CoachingChatProps) {
         </div>
       </div>
 
+    </div>
     </div>
   );
 }

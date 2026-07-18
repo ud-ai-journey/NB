@@ -21,6 +21,7 @@ interface UrgeTrackerProps {
   logs: UrgeLog[];
   onAddLog: (log: UrgeLog) => void;
   activeHabitName?: string;
+  onBackToDashboard?: () => void;
 }
 
 interface AIAnalysis {
@@ -30,7 +31,7 @@ interface AIAnalysis {
   recommendations: string[];
 }
 
-export default function UrgeTracker({ logs, onAddLog, activeHabitName }: UrgeTrackerProps) {
+export default function UrgeTracker({ logs, onAddLog, activeHabitName, onBackToDashboard }: UrgeTrackerProps) {
   const [intensity, setIntensity] = useState<number>(5);
   const [trigger, setTrigger] = useState<string>('Stress');
   const [situation, setSituation] = useState<string>('');
@@ -159,7 +160,17 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName }: UrgeTra
   };
 
   return (
-    <div id="urge-tracker-root" className="grid lg:grid-cols-12 gap-8">
+    <div id="urge-tracker-wrapper" className="space-y-6">
+      {onBackToDashboard && (
+        <button
+          onClick={onBackToDashboard}
+          className="inline-flex items-center gap-2 text-xs font-bold font-mono text-gray-400 hover:text-indigo-400 cursor-pointer transition-all duration-200 px-4 py-2 rounded-xl bg-[#141518] border border-gray-800/80 hover:border-indigo-500/30 hover:bg-gray-900/40"
+        >
+          &larr; Back to Dashboard
+        </button>
+      )}
+
+      <div id="urge-tracker-root" className="grid lg:grid-cols-12 gap-8">
       
       {/* LEFT COLUMN: Input Form & Stats */}
       <div className="lg:col-span-5 space-y-6">
@@ -586,6 +597,7 @@ export default function UrgeTracker({ logs, onAddLog, activeHabitName }: UrgeTra
 
       </div>
 
+    </div>
     </div>
   );
 }

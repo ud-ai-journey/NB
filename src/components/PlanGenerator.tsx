@@ -8,9 +8,10 @@ interface PlanGeneratorProps {
   activePlan: ActionPlan | null;
   currentHabitName?: string;
   logs: any[];
+  onBackToDashboard?: () => void;
 }
 
-export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabitName, logs }: PlanGeneratorProps) {
+export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabitName, logs, onBackToDashboard }: PlanGeneratorProps) {
   const [habitName, setHabitName] = useState(currentHabitName || '');
   const [category, setCategory] = useState<'screen-time' | 'substance' | 'physical' | 'dietary' | 'mental' | 'other'>('screen-time');
   const [currentLevel, setCurrentLevel] = useState('');
@@ -78,7 +79,16 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
   };
 
   return (
-    <div id="plan-generator-container" className="space-y-8">
+    <div id="plan-generator-container" className="space-y-6">
+      {onBackToDashboard && (
+        <button
+          onClick={onBackToDashboard}
+          className="inline-flex items-center gap-2 text-xs font-bold font-mono text-gray-400 hover:text-indigo-400 cursor-pointer transition-all duration-200 px-4 py-2 rounded-xl bg-[#141518] border border-gray-800/80 hover:border-indigo-500/30 hover:bg-gray-900/40"
+        >
+          &larr; Back to Dashboard
+        </button>
+      )}
+
       {/* If an active plan exists, show the plan with an option to rebuild */}
       {activePlan ? (
         <motion.div

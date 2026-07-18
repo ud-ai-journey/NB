@@ -5,9 +5,10 @@ import { Reflection, Habit } from '../types';
 
 interface DailyReflectionProps {
   currentHabits: Habit[];
+  onBackToDashboard?: () => void;
 }
 
-export default function DailyReflection({ currentHabits }: DailyReflectionProps) {
+export default function DailyReflection({ currentHabits, onBackToDashboard }: DailyReflectionProps) {
   const [mood, setMood] = useState<'calm' | 'anxious' | 'proud' | 'stressed' | 'hopeful' | 'struggling'>('calm');
   const [complianceRate, setComplianceRate] = useState<number>(5);
   const [reflectionText, setReflectionText] = useState('');
@@ -82,7 +83,17 @@ export default function DailyReflection({ currentHabits }: DailyReflectionProps)
   };
 
   return (
-    <div id="daily-reflection-root" className="grid lg:grid-cols-12 gap-8">
+    <div id="daily-reflection-wrapper" className="space-y-6">
+      {onBackToDashboard && (
+        <button
+          onClick={onBackToDashboard}
+          className="inline-flex items-center gap-2 text-xs font-bold font-mono text-gray-400 hover:text-indigo-400 cursor-pointer transition-all duration-200 px-4 py-2 rounded-xl bg-[#141518] border border-gray-800/80 hover:border-indigo-500/30 hover:bg-gray-900/40"
+        >
+          &larr; Back to Dashboard
+        </button>
+      )}
+
+      <div id="daily-reflection-root" className="grid lg:grid-cols-12 gap-8">
       
       {/* LEFT: Journal Reflection Form */}
       <div className="lg:col-span-5 space-y-6">
@@ -284,6 +295,7 @@ export default function DailyReflection({ currentHabits }: DailyReflectionProps)
 
       </div>
 
+    </div>
     </div>
   );
 }

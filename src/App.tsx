@@ -278,6 +278,7 @@ export default function App() {
             onPlanGenerated={handlePlanGenerated}
             currentHabitName={activeHabit?.name}
             logs={logs}
+            onBackToDashboard={() => setActiveTab('dashboard')}
           />
         )}
 
@@ -286,6 +287,7 @@ export default function App() {
             logs={logs}
             onAddLog={handleAddLog}
             activeHabitName={activeHabit?.name}
+            onBackToDashboard={() => setActiveTab('dashboard')}
           />
         )}
 
@@ -293,12 +295,14 @@ export default function App() {
           <CoachingChat 
             activeHabit={activeHabit}
             logs={logs}
+            onBackToDashboard={() => setActiveTab('dashboard')}
           />
         )}
 
         {activeTab === 'reflection' && (
           <DailyReflection 
             currentHabits={habits}
+            onBackToDashboard={() => setActiveTab('dashboard')}
           />
         )}
 
