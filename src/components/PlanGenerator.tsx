@@ -229,10 +229,11 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
             <div className="grid md:grid-cols-2 gap-6">
               {/* Habit Name */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
+                <label htmlFor="plan-habit-name" className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
                   Which habit or addiction are you breaking? *
                 </label>
                 <input
+                  id="plan-habit-name"
                   type="text"
                   required
                   placeholder="e.g. Excessive Screen Time, Smoking, Sugar Cravings"
@@ -244,10 +245,11 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
 
               {/* Category */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
+                <label htmlFor="plan-habit-category" className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
                   Habit Category
                 </label>
                 <select
+                  id="plan-habit-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value as any)}
                   className="w-full bg-[#0A0B0E] border border-gray-800 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
@@ -265,10 +267,11 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
             <div className="grid md:grid-cols-2 gap-6">
               {/* Current Level */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
+                <label htmlFor="plan-habit-current-level" className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
                   Current Level of Engagement
                 </label>
                 <input
+                  id="plan-habit-current-level"
                   type="text"
                   placeholder="e.g. 5 hours a day, 10 cigarettes a day, every evening"
                   value={currentLevel}
@@ -279,10 +282,11 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
 
               {/* Target Goal */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
+                <label htmlFor="plan-habit-target-goal" className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
                   Your Target Goal / Ultimate Ideal
                 </label>
                 <input
+                  id="plan-habit-target-goal"
                   type="text"
                   placeholder="e.g. Under 1 hour, Complete cessation, Only once a week"
                   value={targetGoal}
@@ -294,10 +298,11 @@ export default function PlanGenerator({ onPlanGenerated, activePlan, currentHabi
 
             {/* Triggers */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
+              <label htmlFor="plan-habit-triggers" className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
                 What are your main triggers or high-risk situations?
               </label>
               <textarea
+                id="plan-habit-triggers"
                 rows={3}
                 placeholder="e.g. Stress after work, boredom on weekends, feeling lonely in evenings, seeing others do it"
                 value={triggers}
